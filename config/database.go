@@ -3,6 +3,7 @@ package config
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 
 	_ "github.com/lib/pq"
@@ -11,35 +12,31 @@ import (
 var DB *sql.DB
 
 func ConnectDatabase() {
-	// Supabase project URL is NOT a Postgres DSN; use DATABASE_URL (or SUPABASE_DB_URL)
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		dbURL = os.Getenv("SUPABASE_DB_URL")
 	}
 
-	supabaseURL := os.Getenv("SUPABASE_URL")
-	supabaseKey := os.Getenv("SUPABASE_API_KEY") // optional for client libs
-
 	if dbURL == "" {
-		panic("DATABASE_URL (or SUPABASE_DB_URL) is required for Postgres connection")
-	}
-	if supabaseURL == "" {
-		fmt.Println("warning: SUPABASE_URL not set; only needed for client libraries")
-	}
-	if supabaseKey == "" {
-		fmt.Println("warning: SUPABASE_API_KEY not set; only needed for client libraries")
+		// Gunakan log.Println alih-alih panic agar server tidak langsung mati
+		log.Println("WARNING: DATABASE_URL is not set")
+		return 
 	}
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		panic(fmt.Sprintf("failed to open database: %v", err))
+		log.Printf("ERROR: failed to open database: %v\n", err)
+		return
 	}
 
-	// simple health check
+	// Ubah bagian ini: Jangan gunakan panic jika Ping gagal
 	if err := db.Ping(); err != nil {
-		panic(fmt.Sprintf("failed to ping database: %v", err))
+		log.Printf("WARNING: database ping failed on startup (koneksi mungkin butuh waktu): %v\n", err)
+		// Kita tetap menyimpan instance 'db' ke 'DB' karena sql.Open otomatis akan melakukan 
+		// reconnecting saat ada request ke database nantinya.
+	} else {
+		fmt.Println("Database connected successfully (supabase)")
 	}
 
 	DB = db
-	fmt.Println("Database connected successfully (supabase)")
 }
