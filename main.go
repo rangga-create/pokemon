@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"pokemonBE/routes"
@@ -8,6 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
+
+func init() {
+	// Load .env hanya jika ada (lokal)
+	if os.Getenv("VERCEL") == "" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("No .env file found (production mode)")
+		}
+	}
+}
 
 func main() {
 	godotenv.Load()
